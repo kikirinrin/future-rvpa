@@ -642,15 +642,14 @@ plot_futures <- function(vpares,
 
     rename_list <- rename_list %>% dplyr::filter(stat%in%what.plot)
     
-    if(!is.null(future.list)){
+    if (!is.null(future.list)) {
         if(is.null(future.name)) future.name <- str_c("s",1:length(future.list))
         names(future.list) <- future.name
-    }
-    else{
+    } else {
         if(is.null(future.name)) future.name <- str_c("s",1:length(unique(future_tibble$HCR_name)))
     }
 
-    if(is.null(future_tibble)) future_tibble <- purrr::map_dfr(future.list,convert_future_table,.id="scenario")
+    if (is.null(future_tibble)) future_tibble <- purrr::map_dfr(future.list,convert_future_table,.id="scenario")
 
     future.table <-
         future_tibble %>%
