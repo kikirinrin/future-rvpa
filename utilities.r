@@ -623,7 +623,8 @@ plot_futures <- function(vpares,
                          maxyear=NULL,font.size=18,
                          ncol=3,
                          what.plot=c("Recruitment","SSB","biomass","catch","Fsakugen","alpha"),
-                         biomass.unit=1,RP_name=c("Btarget","Blimit","Bban"),
+                         biomass.unit=1,
+                         RP_name = c("Bban", "Blimit", "Btarget"),
                          Btarget=0,Blimit=0,Bban=0,#Blow=0,
                          n_example=3, # number of examples
                          seed=1 # seed for selecting the above example
@@ -709,12 +710,16 @@ plot_futures <- function(vpares,
     dummy2    <- left_join(dummy2,rename_list) %>% dplyr::filter(!is.na(stat))
     ssb_table <- tibble(jstat = dplyr::filter(rename_list, stat == "SSB") %>%
                           dplyr::pull(jstat),
-                        value = c(Btarget, Blimit, Bban) / biomass.unit,
-                        RP_name = RP_name)
+                        value = c(Bban, Blimit, Btarget) / biomass.unit,
+                        RP_name = RP_name) %>%
+      arrange(desc(value))
     
     options(warn=org.warn)
     
-    g1 <- future.table.qt %>% dplyr::filter(!is.na(stat)) %>%
+    g1 <- future.table.qt %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(scenario = as.factor(scenario)) %>%
+      dplyr::filter(!is.na(stat)) %>%
         ggplot() +
         geom_ribbon(aes(x=year,ymin=low,ymax=high,fill=scenario),alpha=0.5)+        
         geom_line(aes(x=year,y=mean,color=scenario),lwd=1)+
@@ -728,7 +733,12 @@ plot_futures <- function(vpares,
         xlab("年")+ylab("")+ labs(fill = "",linetype="",color="")+
         geom_hline(data = ssb_table,
                    aes(yintercept = value, linetype = RP_name),
-                   color = c(col.SBtarget, col.SBlim, col.SBban))
+                   color = c(col.SBtarget, col.SBlim, col.SBban)) +
+      scale_linetype_manual(values = 1:length(RP_name),
+                            guide = guide_legend(
+                              override.aes = list(color = c(col.SBban,
+                                                            col.SBlim,
+                                                            col.SBtarget))))
 
 
     if(n_example>0){
