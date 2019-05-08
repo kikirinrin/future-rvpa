@@ -157,12 +157,17 @@ get.trace <- function(trace){
     return(trace)
 }
     
+#' @param refs.label Label for reference point
+#' @param age.label.ratio 年齢のラベルを入れる位置（xの最大値からの割合)
+#' @export
 plot_yield <- function(MSY_obj,refs_base,
-                       refs.label=NULL, # label for reference point
+                       refs.label = NULL,
                        refs.color=c("#00533E","#edb918","#C73C2E"),
                        AR_select=FALSE,xlim.scale=1.1,
-                       biomass.unit=1,labeling=NULL,lining=TRUE,
-                       age.label.ratio=0.9, # 年齢のラベルを入れる位置（xの最大値からの割合)
+                       biomass.unit=1,
+                       label.distrib = NULL,
+                       lining=TRUE,
+                       age.label.ratio=0.9,
                        family = "JP1",
                        ylim.scale=1.2,future=NULL,past=NULL,future.name=NULL){
     
@@ -280,25 +285,26 @@ plot_yield <- function(MSY_obj,refs_base,
         g1 <- g1 + geom_vline(xintercept=refs_base$SSB,lty="41",lwd=0.6,color=refs.color)
     }
 
-    if (!is.null(labeling)) {
-      if (labeling == "x") {
-                         g1 <- g1 + geom_vline(xintercept=refs_base$SSB,lty="41",lwd=0.6,color=refs.color)+
-	             geom_label_repel(data=refs_base,
-	                              aes(y=ymax*ylim.scale*0.85,
-	                                  x=SSB,label=refs.label),
-	                              direction="x",size=11*0.282,nudge_y=ymax*ylim.scale*0.9)
-      }  else if (labeling == "y") {
-                 g1 <- g1 + geom_point(data=refs_base, aes(y=Catch,x=SSB)) +
-                   geom_label_repel(data=refs_base,
-                                    aes(y=Catch,x=SSB,label=refs.label),
-                                    hjust=0, direction="y", angle=0,
-                                    vjust = 0,segment.size = 1)
+    if (!is.null(label.distrib)) {
+      if (label.distrib == "x") {
+        g1 <- g1 + geom_vline(xintercept = refs_base$SSB,
+                              lty = "41", lwd = 0.6, color = refs.color) +
+          geom_label_repel(data = refs_base,
+                           aes(y = ymax * ylim.scale * 0.85,
+                               x = SSB,
+                               label = refs.label),
+                           direction = "x", size = 11 * 0.282,
+                           nudge_y = ymax * ylim.scale * 0.9)
+      }  else if (label.distrib == "y") {
+        g1 <- g1 + geom_point(data = refs_base,
+                              aes(y = Catch , x=SSB)) +
+          geom_label_repel(data = refs_base,
+                           aes(y = Catch, x = SSB, label = refs.label),
+                           hjust = 0, direction = "y",
+                           angle = 0, vjust = 0, segment.size = 1)
       }
     }
-        
-
     return(g1)
-        
 }
 
 make_RP_table <- function(refs_base){
