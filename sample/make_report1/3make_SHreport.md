@@ -1,6 +1,6 @@
 会議用資料
 ================
-2019-05-07
+2019-05-09
 
 # SH会議用の出力
 
@@ -60,7 +60,7 @@ refs.plot <- dplyr::filter(refs.base,RP.definition%in%c("Btarget0","Blimit0","Bb
                               past=res.pma,labeling=FALSE,
                               refs.color=c(1,1,1), # 印刷が出ないので縦線の色は黒にすることに
                               biomass.unit=1000,#資源量の単位
-                              AR=FALSE,
+                              AR_select=FALSE,
                               xlim.scale=0.4,ylim.scale=1.3 # x, y軸の最大値の何倍までプロットするか。ラベルやyield curveの形を見ながら適宜調整してください
                               ) + theme_SH())
 ```
@@ -97,6 +97,7 @@ abline(h=SPR.msy,lty=2)
                             beta=0.8, # 推奨されるβに変える
                             refs.color=c(1,1,1),
                             yscale=1.2, # y軸を最大値の何倍まで表示するか。ラベルの重なり具合を見ながら調整してください
+                            HCR.label.position=c(1,1),# HCRの説明を書くラベルの位置。相対値なので位置を見ながら調整してください。
                             ylab.type="F",Fratio=Fratio)+theme_SH())
 ```
 
@@ -121,9 +122,9 @@ ggsave_SH("g3_kobe4_F.png",g3_kobe4_F)
                    biomass.unit=1000,  # バイオマスの単位(100, 1000, or 10000トン)
                    n_example=5,seed=2)+ # どのシミュレーションをピックアップするかはseedの値を変えて調整してください
     theme_SH()+
-    theme(legend.position="top")+
-    scale_color_hue(labels=c(VPA="過去の推定値",s1="現状の漁獲圧",s2="漁獲管理規則(beta=0.8)"))+
-    scale_fill_hue(labels=c(VPA="過去の推定値",s1="現状の漁獲圧",s2="漁獲管理規則(beta=0.8)"))+
+    theme(legend.position="right")+
+    scale_color_hue(labels=c(VPA="過去の推定値",s1="現状の漁獲圧",s2="漁獲管理規則\n(β=0.8)"))+
+    scale_fill_hue(labels=c(VPA="過去の推定値",s1="現状の漁獲圧",s2="漁獲管理規則\n(β=0.8)"))+
     scale_linetype_discrete(guide=FALSE)
 )
 ```

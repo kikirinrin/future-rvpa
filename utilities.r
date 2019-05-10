@@ -50,6 +50,10 @@ convert_future_table <- function(fout,label="tmp"){
         gather(key=sim, value=value, -year, convert=TRUE) %>%
         mutate(year=as.numeric(year),stat="Fsakugen",label=label)
 
+    Fsakugen_ratio <- Fsakugen %>%
+        mutate(value=value+1)
+    Fsakugen_ratio$stat <- "Fsakugen_ratio"
+
     if(is.null(fout$recruit)) fout$recruit <- fout$naa[1,,]
     Recruitment <- fout$recruit %>%                                    #追加
         as_tibble %>%                                                   #追加
@@ -57,7 +61,7 @@ convert_future_table <- function(fout,label="tmp"){
         gather(key=sim, value=value, -year, convert=TRUE) %>%           #追加
         mutate(year=as.numeric(year),stat="Recruitment",label=label)   
     
-    bind_rows(ssb,catch,biomass,alpha_value,Fsakugen,Recruitment)
+    bind_rows(ssb,catch,biomass,alpha_value,Fsakugen,Fsakugen_ratio,Recruitment)
 }
         
     
@@ -231,7 +235,8 @@ plot_yield <- function(MSY_obj,refs_base,
                     ylim=c(0,ymax*ylim.scale),expand=0) +
     geom_text(data=age.label,
               mapping = aes(y = cumcatch, x = ssb.mean, label = age_name),
-              family = family) +
+                            family = family
+              ) +
 #    geom_text_repel(data=refs_base,
 #                     aes(y=Catch,x=SSB,label=refs.label),
 #                     size=4,box.padding=0.5,segment.color="gray",
@@ -282,7 +287,11 @@ plot_yield <- function(MSY_obj,refs_base,
     
     if(isTRUE(lining)){
 #        ylim.scale.factor <- rep(c(0.94,0.97),ceiling(length(refs.label)/2))[1:length(refs.label)]
-        g1 <- g1 + geom_vline(xintercept=refs_base$SSB,lty="41",lwd=0.6,color=refs.color)
+        g1 <- g1 + geom_vline(xintercept=refs_base$SSB,lty="41",lwd=0.6,color=refs.color)+
+            geom_label_repel(data=refs_base,
+                             aes(y=ymax*ylim.scale*0.85,
+                                 x=SSB,label=refs.label),
+                             direction="x",size=11*0.282,nudge_y=ymax*ylim.scale*0.9)  
     }
 
     if (!is.null(label.distrib)) {
@@ -465,6 +474,7 @@ plot_kobe_gg <- function(vpares,refs_base,roll_mean=1,
                          family = "JP1",
                          Fratio=NULL, # ylab.type=="F"のとき
                          yscale=1.2,xscale=1.2,
+                         HCR.label.position=c(1,1), # デフォルトはx軸方向が1, y軸方向が1の相対値です。様子を見ながら調整してください
                          refs.color=c("#00533E","#edb918","#C73C2E"),
                          beta=NULL){
 
@@ -585,14 +595,22 @@ plot_kobe_gg <- function(vpares,refs_base,roll_mean=1,
     }}    
 
     if(!is.null(beta)){
+        x.pos <- max.B*HCR.label.position[1]
+        y.pos <- multi2currF(1.05)*HCR.label.position[2]
         g6 <- g6+stat_function(fun = h,lwd=1.5,color=1,n=1000)+
-            annotate("text",x=max.B*1,y=multi2currF(1.05),
-                     label=str_c("漁獲管理規則\n(beta=",beta,")"),
+            annotate("text",x=x.pos,y=y.pos,            
+                     label=str_c("漁獲管理規則\n(β=",beta,")"),            
                      family = family)
         g4 <- g4+stat_function(fun = h,lwd=1.5,color=1,n=1000)+
-            annotate("text",x=max.B*1,y=multi2currF(1.05),
-                     label=str_c("漁獲管理規則\n(beta=",beta,")"),
+            annotate("text",x=x.pos,y=y.pos,
                      family = family)
+                     label=str_c("漁獲管理規則\n(β=",beta,")"),
+#        if(abs(HCR.label.position[1]-1)+abs(HCR.label.position[2]-1)>0.3){
+#            label.line <- tibble(x=c(max.B,x.pos),
+#                                 y=c(multi2currF(1.05),y.pos))
+#            g6 <- g6 + geom_path(data=label.line,mapping=aes(x=x,y=y),color="gray")
+#            g4 <- g4 + geom_path(data=label.line,mapping=aes(x=x,y=y),color="gray")
+#        }
     }
    
     g6 <- g6 +
@@ -628,7 +646,7 @@ plot_futures <- function(vpares,
                          CI_range=c(0.1,0.9),
                          maxyear=NULL,font.size=18,
                          ncol=3,
-                         what.plot=c("Recruitment","SSB","biomass","catch","Fsakugen","alpha"),
+                         what.plot=c("Recruitment","SSB","biomass","catch","Fsakugen","Fsakugen_ratio"),
                          biomass.unit=1,
                          RP_name = c("Bban", "Blimit", "Btarget"),
                          Btarget=0,Blimit=0,Bban=0,#Blow=0,
@@ -638,13 +656,14 @@ plot_futures <- function(vpares,
 
     junit <- c("","十","百","千","万")[log10(biomass.unit)+1]
     require(tidyverse,quietly=TRUE)
-    rename_list <- tibble(stat=c("Recruitment","SSB","biomass","catch","Fsakugen","alpha"),
+    rename_list <- tibble(stat=c("Recruitment","SSB","biomass","catch","Fsakugen","Fsakugen_ratio","alpha"),
                           jstat=c(str_c("加入尾数"),
                               str_c("親魚量 (",junit,"トン)"),
                               str_c("資源量 (",junit,"トン)"),
                               str_c("漁獲量 (",junit,"トン)"),
                               "努力量の削減率",
-                              "Fcurrentに対する乗数"))
+                              "Fcurrentに対する乗数",
+                              "alpha"))
 
     rename_list <- rename_list %>% dplyr::filter(stat%in%what.plot)
     
@@ -666,7 +685,8 @@ plot_futures <- function(vpares,
     future.example <- future.table %>%
       dplyr::filter(sim%in%sample(2:max(future.table$sim),n_example)) %>%
       mutate(stat = as.character(stat),
-             value=ifelse(stat=="Fsakugen",value,value/biomass.unit)) %>%
+             value=ifelse((stat=="Fsakugen"|stat=="Fsakugen_ratio"),
+                          value,value/biomass.unit)) %>%
       left_join(rename_list) %>%
       group_by(sim,scenario)
         
@@ -688,7 +708,7 @@ plot_futures <- function(vpares,
     future.table <- bind_rows(future.table,vpa_tb,future.dummy) %>%
         mutate(stat=factor(stat,levels=rename_list$stat)) %>%
         mutate(scenario=factor(scenario,levels=c("VPA",future.name))) %>%
-        mutate(value=ifelse(stat%in%c("Fsakugen","alpha"),value,value/biomass.unit))
+        mutate(value=ifelse(stat%in%c("Fsakugen","Fsakugen_ratio","alpha"),value,value/biomass.unit))
 
     future.table.qt <- future.table %>% group_by(scenario,year,stat) %>%
         summarise(low=quantile(value,CI_range[1],na.rm=T),
@@ -726,7 +746,7 @@ plot_futures <- function(vpares,
       dplyr::mutate(scenario = as.factor(scenario)) %>%
       dplyr::filter(!is.na(stat)) %>%
         ggplot() +
-        geom_ribbon(aes(x=year,ymin=low,ymax=high,fill=scenario),alpha=0.5)+        
+        geom_ribbon(aes(x=year,ymin=low,ymax=high,fill=scenario),alpha=0.4)+        
         geom_line(aes(x=year,y=mean,color=scenario),lwd=1)+
         geom_line(aes(x=year,y=mean,color=scenario),linetype=2,lwd=1)+
         geom_blank(data=dummy,mapping=aes(y=value,x=year))+
@@ -736,6 +756,7 @@ plot_futures <- function(vpares,
         theme(legend.position="top",panel.grid = element_blank())+
         facet_wrap(~factor(jstat,levels=rename_list$jstat),scales="free_y",ncol=ncol)+        
         xlab("年")+ylab("")+ labs(fill = "",linetype="",color="")+
+        xlim(min(future.table$year),maxyear)+
         geom_hline(data = ssb_table,
                    aes(yintercept = value, linetype = RP_name),
                    color = c(col.SBtarget, col.SBlim, col.SBban)) +
